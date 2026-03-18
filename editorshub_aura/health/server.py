@@ -1,20 +1,18 @@
-import os
-import threading
 from flask import Flask
-from config import PORT
+import threading
+import os
 
 app = Flask(__name__)
 
-@app.route('/')
-def health_check():
-    return "EditorsHub-AURA running", 200
+@app.route("/")
+def home():
+    return "Bot is running!"
 
-def run_server():
-    # Use 0.0.0.0 to bind to all interfaces, which is required for Render
-    app.run(host='0.0.0.0', port=PORT, use_reloader=False)
+def run():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
 def start_health_server():
-    """Starts the Flask health server in a background daemon thread."""
-    server_thread = threading.Thread(target=run_server, daemon=True)
-    server_thread.start()
-    return server_thread
+    thread = threading.Thread(target=run)
+    thread.daemon = True
+    thread.start()
