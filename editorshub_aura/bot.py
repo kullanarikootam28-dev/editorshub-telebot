@@ -43,14 +43,13 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 # =========================
 # ✅ SAFE STARTUP
 # =========================
-async def setup_bot(app):
+async def setup_bot(application):
     from services.scheduler import start_scheduler
 
-    # ✅ ONLY PLACE scheduler is started
-    start_scheduler(app)
+    # ✅ start scheduler AFTER event loop exists
+    start_scheduler(application)
 
-    logger.info("Scheduler started safely after event loop.")
-
+    logger.info("✅ Scheduler started safely after event loop.")
 
 # =========================
 # MAIN
