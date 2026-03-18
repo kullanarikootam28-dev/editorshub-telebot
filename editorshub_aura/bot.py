@@ -1,6 +1,5 @@
 import logging
 import sys
-import traceback
 import os
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -32,12 +31,11 @@ logging.basicConfig(
     ]
 )
 
-logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
 # =========================
-# 🚀 START COMMAND
+# START COMMAND
 # =========================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -47,38 +45,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("Contact Admin", callback_data="contact_admin")]
     ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
     await update.message.reply_text(
-        "Welcome to EditorsHub-AURA!\nPlease choose an option below:",
-        reply_markup=reply_markup
+        "Welcome to EditorsHub-AURA!",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
 
 # =========================
-# ⚙️ SIMPLE CALLBACKS
+# CALLBACKS
 # =========================
 async def simple_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     if query.data == "editor_guidelines":
-        await query.message.reply_text(
-            "Editor Guidelines:\n"
-            "1. Revisions within 24h\n"
-            "2. No direct client contact\n"
-            "3. Late delivery penalty"
-        )
+        await query.message.reply_text("Editor rules: finish on time, no direct contact.")
 
     elif query.data == "contact_admin":
         await query.message.reply_text("Contact: @Nithinvijay")
 
 
 # =========================
-# ❌ ERROR HANDLER
+# ERROR HANDLER
 # =========================
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    logger.error("Exception:", exc_info=context.error)
+    logger.error("Exception occurred", exc_info=context.error)
 
     if ADMIN_ID:
         try:
@@ -91,51 +82,42 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 
 
 # =========================
-# 🔥 SAFE STARTUP (FIXED)
+# ✅ SAFE STARTUP (IMPORTANT)
 # =========================
 async def setup_bot(application):
     """
     This runs AFTER event loop starts.
-    Scheduler MUST start here.
+    Scheduler must be started HERE.
     """
 
-    from telegram import (
-        BotCommand,
-        BotCommandScopeDefault,
-        BotCommandScopeAllPrivateChats,
-        BotCommandScopeAllGroupChats,
-        MenuButtonCommands,
-    )
-
-    # ✅ START SCHEDULER SAFELY
     from services.scheduler import start_scheduler
+
+    # ✅ SAFE scheduler start
     start_scheduler(application)
 
-    # Commands
+    from telegram import BotCommand, BotCommandScopeDefault
+
     commands = [
         BotCommand("start", "Start bot"),
         BotCommand("order", "Place order"),
-        BotCommand("myorders", "My orders"),
+        BotCommand("myorders", "Track orders"),
     ]
 
     try:
         await application.bot.set_my_commands(commands, scope=BotCommandScopeDefault())
-        await application.bot.set_my_commands(commands, scope=BotCommandScopeAllPrivateChats())
-        await application.bot.set_my_commands(commands, scope=BotCommandScopeAllGroupChats())
-        await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
     except Exception as e:
         logger.error(f"Command setup failed: {e}")
 
 
 # =========================
-# 🧠 MAIN FUNCTION
+# MAIN FUNCTION
 # =========================
 def main():
     if not BOT_TOKEN:
         logger.error("BOT_TOKEN missing")
         return
 
-    # OPTIONAL health server (only if needed)
+    # Optional health server
     if os.getenv("RENDER") == "true":
         start_health_server()
 
@@ -143,10 +125,7 @@ def main():
 
     app = Application.builder().token(BOT_TOKEN).rate_limiter(AIORateLimiter()).build()
 
-    # Error handler
-    app.add_error_handler(error_handler)
-
-    # Commands
+    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("dashboard", admin_dashboard))
     app.add_handler(CommandHandler("myorders", my_orders))
@@ -165,13 +144,16 @@ def main():
     app.add_handler(get_relay_conv_handler())
 
     # Callbacks
-    app.add_handler(CallbackQueryHandler(simple_callbacks, pattern="^(editor_guidelines|contact_admin)$"))
+    app.add_handler(CallbackQueryHandler(simple_callbacks))
     app.add_handler(CallbackQueryHandler(admin_callback))
     app.add_handler(CallbackQueryHandler(auth_callback, pattern="^auth\\|"))
     app.add_handler(CallbackQueryHandler(client_editor_selection, pattern="^select_editor\\|"))
     app.add_handler(CallbackQueryHandler(client_revision_decision, pattern="^(req_revision|rate)\\|"))
 
-    # ✅ CRITICAL: attach setup
+    # Error handler
+    app.add_error_handler(error_handler)
+
+    # ✅ CRITICAL: run setup AFTER loop starts
     app.post_init = setup_bot
 
     logger.info("Bot starting...")
