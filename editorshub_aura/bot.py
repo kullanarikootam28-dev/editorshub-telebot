@@ -37,7 +37,7 @@ from handlers.auth import (
 from handlers.admin_post import get_admin_post_handler
 from handlers.relay import get_relay_conv_handler
 
-
+# Logging setup
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
@@ -49,35 +49,33 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-
 # ---------------- ERROR HANDLER ----------------
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.error("Exception:", exc_info=context.error)
 
-
 # ---------------- MAIN ----------------
-async def main():
+def main():
     if not BOT_TOKEN:
         logger.error("BOT_TOKEN missing")
         return
 
-    from services.scheduler import start_scheduler
-
+    # Start Health Server (Ensures Render doesn't shut down)
     logger.info("Starting Health Server...")
-    start_health_server()  # REMOVE if switching to worker
+    start_health_server() 
 
     logger.info("Initializing Bot...")
+    # Initialize the Application
     app = Application.builder().token(BOT_TOKEN).rate_limiter(AIORateLimiter()).build()
 
     # Error handler
     app.add_error_handler(error_handler)
 
-    # Commands
+    # Commands & Handlers
     from handlers.client import my_orders
     from handlers.editor import applied_jobs, get_complaint_handler
 
     app.add_handler(CommandHandler("dashboard", admin_dashboard))
-    app.add_handler(CommandHandler("start", lambda u, c: None))
+    app.add_handler(CommandHandler("start", lambda u, c: None)) # You can replace None with a proper start function
     app.add_handler(CommandHandler("myorders", my_orders))
     app.add_handler(CommandHandler("leaderboard", leaderboard))
     app.add_handler(CommandHandler("appliedjobs", applied_jobs))
@@ -110,13 +108,14 @@ async def main():
         )
     )
 
-    # ✅ START SCHEDULER INSIDE LOOP
+    # ✅ START SCHEDULER
+    from services.scheduler import start_scheduler
     logger.info("Starting scheduler...")
     start_scheduler(app)
 
+    # ✅ THE FIX: Use run_polling() without 'await' and not inside 'async asyncio.run'
     logger.info("Starting bot polling...")
-    await app.run_polling()
-
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
