@@ -68,8 +68,9 @@ def main():
     )
     from handlers.admin_post import get_admin_post_handler
     from handlers.relay import get_relay_conv_handler
-
+    from handlers.start import start
     # ===== COMMANDS =====
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("dashboard", admin_dashboard))
     app.add_handler(CommandHandler("myorders", my_orders))
     app.add_handler(CommandHandler("leaderboard", leaderboard))
