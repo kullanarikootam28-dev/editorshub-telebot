@@ -1,6 +1,5 @@
 import logging
 import sys
-import os
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -11,7 +10,6 @@ from telegram.ext import (
 
 from config import BOT_TOKEN
 
-# Logging setup
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
@@ -20,24 +18,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# ✅ Runs after bot starts (scheduler safe)
 async def post_init(application: Application) -> None:
     from services.scheduler import start_scheduler
     logger.info("Bot initialized. Starting scheduler...")
     start_scheduler(application)
 
 
-# ✅ Global error handler
 async def error_handler(update: object, context: object):
-    logger.error("Exception:", exc_info=context.error)
+    logger.error("Unhandled exception:", exc_info=context.error)
 
 
 def main():
     if not BOT_TOKEN:
-        logger.error("BOT_TOKEN missing")
-        return
+        logger.error("BOT_TOKEN is missing. Set it as an environment variable.")
+        sys.exit(1)
 
-    logger.info("Initializing Bot...")
+    logger.info("Initializing EditorsHub-AURA Bot...")
 
     app = (
         Application.builder()
@@ -47,10 +43,9 @@ def main():
         .build()
     )
 
-    # Error handler
     app.add_error_handler(error_handler)
 
-    # ===== IMPORT HANDLERS =====
+    # ===== HANDLERS =====
     from handlers.client import (
         my_orders,
         get_order_conv_handler,
@@ -109,20 +104,8 @@ def main():
         )
     )
 
-    # ===== WEBHOOK CONFIG =====
-    PORT = int(os.environ.get("PORT", 10000))
-    WEBHOOK_URL = os.environ.get(
-        "WEBHOOK_URL",
-        "https://your-app-name.onrender.com",  # 🔁 CHANGE THIS
-    )
-
-    logger.info("Starting bot with webhook...")
-
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        webhook_url=WEBHOOK_URL,
-    )
+    logger.info("Starting bot with long polling...")
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
