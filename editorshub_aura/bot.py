@@ -49,6 +49,7 @@ def main():
     from handlers.client import (
         my_orders,
         get_order_conv_handler,
+        get_relay_myorder_handler,   # ← NEW
         client_editor_selection,
         client_revision_decision,
     )
@@ -69,6 +70,7 @@ def main():
     from handlers.admin_post import get_admin_post_handler
     from handlers.relay import get_relay_conv_handler
     from handlers.start import start
+
     # ===== COMMANDS =====
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("dashboard", admin_dashboard))
@@ -87,6 +89,7 @@ def main():
     app.add_handler(get_submit_handler())
     app.add_handler(get_register_conv_handler())
     app.add_handler(get_relay_conv_handler())
+    app.add_handler(get_relay_myorder_handler())   # ← NEW: /myorders message board
 
     # ===== CALLBACKS =====
     app.add_handler(
