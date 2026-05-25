@@ -246,3 +246,28 @@ def add_submission(submission_data: list):
 
 def add_profit(profit_data: list):
     add_row("Profit", profit_data)
+
+
+def log_moderation_event(
+    user_id: str,
+    username: str,
+    message_text: str,
+    categories: str,
+    location: str,
+    action: str = "Blocked",
+):
+    """Write a flagged-message record to the Moderation sheet."""
+    from datetime import datetime
+    row = [
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        user_id,
+        f"@{username}" if username else user_id,
+        message_text[:300],
+        categories,
+        location,
+        action,
+    ]
+    try:
+        add_row("Moderation", row)
+    except Exception as e:
+        logger.error(f"Failed to write moderation log: {e}")

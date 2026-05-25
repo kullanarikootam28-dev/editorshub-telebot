@@ -14,7 +14,7 @@ services:
       - fra
     env:
       - key: BOT_TOKEN
-        value: ""          # fill in Koyeb dashboard
+        value: ""
       - key: SUPER_ADMIN_ID
         value: "7805721542"
       - key: ADMIN_ID
@@ -26,6 +26,8 @@ services:
       - key: GOOGLE_SHEET_KEY
         value: ""
       - key: GOOGLE_CREDENTIALS
+        value: ""
+      - key: OPENAI_API_KEY
         value: ""
     health_checks:
       - type: tcp

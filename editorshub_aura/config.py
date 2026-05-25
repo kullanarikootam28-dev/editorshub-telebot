@@ -36,3 +36,6 @@ GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json
 
 # ── Server (health check) ─────────────────────────────────────────────────────
 PORT = int(os.getenv("PORT", 8080))
+
+# ── AI Moderation ────────────────────────────────────────────────────────────
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
