@@ -1,0 +1,44 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Render.com Deployment — Free tier, no credit card, private repo
+#
+# Deploy type: Background Worker (NOT Web Service)
+#   → Background Workers do NOT sleep from HTTP inactivity
+#   → Web Services sleep after 15 min — DO NOT use that type for this bot
+#
+# Setup:
+#   1. Go to dashboard.render.com → New → Background Worker
+#   2. Connect your GitHub repo (private repos work fine)
+#   3. Render auto-detects this render.yaml
+#   4. Add each environment variable in Render dashboard → Environment tab
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  - type: worker                          # ← IMPORTANT: worker, not web
+    name: editorshub-aura-bot
+    runtime: python
+    repo: https://github.com/kullanarikootam28-dev/editorshub-telebot
+    branch: master
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd editorshub_aura && python bot.py
+    plan: free
+    autoDeploy: true                      # redeploys automatically on git push
+
+    envVars:
+      - key: BOT_TOKEN
+        sync: false                       # filled in Render dashboard
+      - key: SUPER_ADMIN_ID
+        value: "7805721542"
+      - key: ADMIN_ID
+        sync: false
+      - key: JOBS_CHANNEL_ID
+        sync: false
+      - key: EDITORS_COMMUNITY_ID
+        sync: false
+      - key: GOOGLE_SHEET_KEY
+        sync: false
+      - key: GOOGLE_CREDENTIALS
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PORT
+        value: "8080"
