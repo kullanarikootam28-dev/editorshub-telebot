@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# EditorsHub-AURA Bot — 24/7 Uptime via GitHub Actions (FREE, no card needed)
+#
+# How it works:
+#   • Runs at 0:00, 6:00, 12:00, 18:00 UTC every day  (4 restarts / day)
+#   • Each run has a 350-minute (5h 50m) timeout — just under GitHub's 6h limit
+#   • ~10 minute gap between restart and next scheduled run (acceptable)
+#   • concurrency: cancel-in-progress prevents duplicate polling instances
+#   • All secrets stored in GitHub Secrets — safe to keep repo public
+#
+# Setup:
+#   1. Go to your repo → Settings → Secrets and variables → Actions
+#   2. Add each secret listed in the "env:" block below
+#   3. Push this file to master — the bot starts automatically
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: EditorsHub Bot — 24/7
+
+on:
+  schedule:
+    # Restart at 00:00, 06:00, 12:00, 18:00 UTC every day
+    - cron: '0 0,6,12,18 * * *'
+  workflow_dispatch:        # allows manual "Run workflow" from GitHub UI
+  push:
+    branches: [master]      # auto-deploy on every push to master
+
+# Prevent two bot instances running at the same time
+concurrency:
+  group: editorshub-bot
+  cancel-in-progress: true
+
+jobs:
+  run-bot:
+    name: Run EditorsHub Bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 350    # 5h 50m — exits cleanly before GitHub kills it
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip           # caches packages between runs (faster startup)
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Bot
+        working-directory: editorshub_aura
+        run: python bot.py
+        env:
+          # ── Required secrets (add in: Settings → Secrets → Actions) ──────
+          BOT_TOKEN:             ${{ secrets.BOT_TOKEN }}
+          SUPER_ADMIN_ID:        ${{ secrets.SUPER_ADMIN_ID }}
+          ADMIN_ID:              ${{ secrets.ADMIN_ID }}
+          JOBS_CHANNEL_ID:       ${{ secrets.JOBS_CHANNEL_ID }}
+          EDITORS_COMMUNITY_ID:  ${{ secrets.EDITORS_COMMUNITY_ID }}
+          GOOGLE_SHEET_KEY:      ${{ secrets.GOOGLE_SHEET_KEY }}
+          GOOGLE_CREDENTIALS:    ${{ secrets.GOOGLE_CREDENTIALS }}
+          OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
