@@ -620,3 +620,35 @@ async def client_revision_decision(update: Update, context: ContextTypes.DEFAULT
                     text=f"Client rated {stars} stars for Order {order_id}.\nConfirm payment release to editor?",
                     reply_markup=get_payment_confirm_keyboard(order_id),
                 )
+
+
+async def client_approve_final(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles the 'No, approve final' button from the revision keyboard."""
+    query = update.callback_query
+    await query.answer()
+    order_id = query.data.split("|")[1]
+    await query.edit_message_text(
+        f"✅ Final submission for Order {order_id} approved.\nThank you!"
+    )
+    await asyncio.to_thread(update_order_status, order_id, "Completed")
+    order = await asyncio.to_thread(get_order, order_id)
+    if order:
+        editor_id = order.get("SelectedEditor")
+        if editor_id:
+            from database.sheets import update_editor_aura
+            from services.aura import calculate_review_points
+            await asyncio.to_thread(update_editor_aura, editor_id, calculate_review_points("completed"))
+            try:
+                await context.bot.send_message(
+                    chat_id=editor_id,
+                    text=f"✅ Your final submission for Order {order_id} was approved by the client!",
+                )
+            except Exception:
+                pass
+        if ADMIN_ID:
+            from utils.keyboards import get_payment_confirm_keyboard
+            await context.bot.send_message(
+                chat_id=ADMIN_ID,
+                text=f"Client approved the final for Order {order_id}. Please release payment.",
+                reply_markup=get_payment_confirm_keyboard(order_id),
+            )

@@ -30,9 +30,9 @@ if EDITORS_COMMUNITY_ID:
 # ── Google Sheets ─────────────────────────────────────────────────────────────
 GOOGLE_SHEET_KEY = os.getenv("GOOGLE_SHEET_KEY")
 
-# Supports two modes:
-#   1. GOOGLE_CREDENTIALS env var — full service-account JSON as a string (Railway/production)
-#   2. GOOGLE_CREDENTIALS_FILE env var or local credentials.json (local dev)
 _google_creds_json = os.getenv("GOOGLE_CREDENTIALS")
 GOOGLE_CREDENTIALS = json.loads(_google_creds_json) if _google_creds_json else None
 GOOGLE_CREDENTIALS_FILE = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
+
+# ── Server (health check) ─────────────────────────────────────────────────────
+PORT = int(os.getenv("PORT", 8080))
