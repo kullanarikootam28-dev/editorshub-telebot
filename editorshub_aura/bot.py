@@ -19,9 +19,21 @@ logger = logging.getLogger(__name__)
 
 
 async def post_init(application: Application) -> None:
+    import asyncio
     from services.scheduler import start_scheduler
-    logger.info("Bot initialized. Starting scheduler...")
+    from health.server import start_health_server
+    from setup_sheets import setup
+
+    logger.info("Bot initialized. Setting up Google Sheets...")
+    try:
+        created, skipped = await asyncio.to_thread(setup)
+        logger.info(f"Sheets ready — created: {created}, existing: {skipped}")
+    except Exception as e:
+        logger.warning(f"Sheet setup failed (bot will still run): {e}")
+
+    logger.info("Starting scheduler and health server...")
     start_scheduler(application)
+    start_health_server()
 
 
 async def error_handler(update: object, context: object):
@@ -49,9 +61,10 @@ def main():
     from handlers.client import (
         my_orders,
         get_order_conv_handler,
-        get_relay_myorder_handler,   # ← NEW
+        get_relay_myorder_handler,
         client_editor_selection,
         client_revision_decision,
+        client_approve_final,
     )
     from handlers.editor import (
         applied_jobs,
@@ -89,7 +102,7 @@ def main():
     app.add_handler(get_submit_handler())
     app.add_handler(get_register_conv_handler())
     app.add_handler(get_relay_conv_handler())
-    app.add_handler(get_relay_myorder_handler())   # ← NEW: /myorders message board
+    app.add_handler(get_relay_myorder_handler())
 
     # ===== CALLBACKS =====
     app.add_handler(
@@ -106,6 +119,10 @@ def main():
         CallbackQueryHandler(
             client_revision_decision, pattern=r"^(req_revision|rate)\|"
         )
+    )
+    # Fix 5: handle the "approve final" button that was silently broken
+    app.add_handler(
+        CallbackQueryHandler(client_approve_final, pattern=r"^approve_final\|")
     )
 
     logger.info("Starting bot with long polling...")

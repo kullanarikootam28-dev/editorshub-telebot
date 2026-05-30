@@ -103,7 +103,16 @@ async def start_register(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def reg_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["reg_name"] = update.message.text.strip()
+    from services.moderator import moderate, REDIRECT_MESSAGE
+    name_text = update.message.text.strip()
+    mod = await moderate(name_text)
+    if mod["flagged"]:
+        await update.message.reply_text(
+            "⚠️ <b>Inappropriate content detected.</b>\n\nPlease provide a professional name or editor alias.",
+            parse_mode="HTML", reply_markup=_cancel_keyboard(),
+        )
+        return REG_NAME
+    context.user_data["reg_name"] = name_text
 
     from utils.keyboards import get_editor_skills_keyboard
 
@@ -463,22 +472,55 @@ async def _cancel_complaint_handler(update: Update, context: ContextTypes.DEFAUL
 
 
 async def receive_complaint(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from services.moderator import moderate
+    from database.sheets import log_moderation_event
+    from html import escape
+    import asyncio as _asyncio
+
     text = update.message.text
     user = update.effective_user
     username = f"@{user.username}" if user.username else user.full_name
 
+    mod = await moderate(text)
+    if mod["flagged"]:
+        await update.message.reply_text(
+            "<b>Message not sent.</b>\n\n"
+            "Your complaint contained content that violates our guidelines.\n"
+            "Please keep your feedback professional and constructive.\n\n"
+            "If you have a genuine concern, please rephrase and try again.",
+            parse_mode="HTML",
+        )
+        if ADMIN_ID:
+            try:
+                await context.bot.send_message(
+                    chat_id=ADMIN_ID,
+                    text=(
+                        f"<b>Blocked Complaint - AI Flag</b>\n\n"
+                        f"From: {escape(username)} (ID: <code>{user.id}</code>)\n"
+                        f"Reason: <b>{escape(mod['reason'])}</b>\n\n"
+                        f"Message:\n<blockquote>{escape(text[:300])}</blockquote>"
+                    ),
+                    parse_mode="HTML",
+                )
+            except Exception:
+                pass
+        await _asyncio.to_thread(
+            log_moderation_event,
+            str(user.id), user.username or str(user.id),
+            text, mod["reason"], "complaint", "Blocked",
+        )
+        return ConversationHandler.END
+
     await update.message.reply_text(
-        "✅ Your message has been securely forwarded to the Admin. Thank you!"
+        "Your message has been securely forwarded to the Admin. Thank you!"
     )
 
     if ADMIN_ID:
-        from html import escape
-
         try:
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
                 text=(
-                    f"📣 <b>NEW COMPLAINT / FEEDBACK</b>\n\n"
+                    f"<b>NEW COMPLAINT / FEEDBACK</b>\n\n"
                     f"From: {escape(username)} (ID: <code>{user.id}</code>)\n\n"
                     f"Message:\n{escape(text)}"
                 ),
@@ -488,6 +530,7 @@ async def receive_complaint(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     return ConversationHandler.END
+
 
 
 def get_complaint_handler():

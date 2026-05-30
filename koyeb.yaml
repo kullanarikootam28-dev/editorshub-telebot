@@ -1,0 +1,38 @@
+name: editorshub-telebot
+services:
+  - name: bot
+    type: worker
+    git:
+      repository: github.com/kullanarikootam28-dev/editorshub-telebot
+      branch: master
+    build:
+      builder: buildpack
+    run:
+      command: "cd editorshub_aura && python bot.py"
+    instance_type: free
+    regions:
+      - fra
+    env:
+      - key: BOT_TOKEN
+        value: ""
+      - key: SUPER_ADMIN_ID
+        value: "7805721542"
+      - key: ADMIN_ID
+        value: ""
+      - key: JOBS_CHANNEL_ID
+        value: ""
+      - key: EDITORS_COMMUNITY_ID
+        value: ""
+      - key: GOOGLE_SHEET_KEY
+        value: ""
+      - key: GOOGLE_CREDENTIALS
+        value: ""
+      - key: OPENAI_API_KEY
+        value: ""
+    health_checks:
+      - type: tcp
+        port: 8080
+        interval: 60
+        timeout: 5
+        healthy_threshold: 1
+        unhealthy_threshold: 3
