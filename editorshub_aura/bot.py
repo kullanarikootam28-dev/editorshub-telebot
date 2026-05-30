@@ -19,9 +19,19 @@ logger = logging.getLogger(__name__)
 
 
 async def post_init(application: Application) -> None:
+    import asyncio
     from services.scheduler import start_scheduler
     from health.server import start_health_server
-    logger.info("Bot initialized. Starting scheduler and health server...")
+    from setup_sheets import setup
+
+    logger.info("Bot initialized. Setting up Google Sheets...")
+    try:
+        created, skipped = await asyncio.to_thread(setup)
+        logger.info(f"Sheets ready — created: {created}, existing: {skipped}")
+    except Exception as e:
+        logger.warning(f"Sheet setup failed (bot will still run): {e}")
+
+    logger.info("Starting scheduler and health server...")
     start_scheduler(application)
     start_health_server()
 
