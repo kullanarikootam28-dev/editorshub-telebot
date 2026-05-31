@@ -19,7 +19,7 @@ services:
     repo: https://github.com/kullanarikootam28-dev/editorshub-telebot
     branch: master
     buildCommand: pip install -r requirements.txt
-    startCommand: cd editorshub_aura && python bot.py
+    startCommand: cd editorshub_aura && python3 bot.py
     plan: free
     autoDeploy: true                      # redeploys automatically on git push
 
